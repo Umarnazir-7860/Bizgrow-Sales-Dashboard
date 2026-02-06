@@ -140,84 +140,179 @@ function InvoicesContent() {
     }
   };
 
-  const generatePDF = async (inv) => {
-    try {
-      const doc = new jsPDF();
-      
-      // Page 1: Invoice Details
-      doc.setFontSize(22); doc.setTextColor(18, 6, 106); doc.setFont("helvetica", "bold");
-      doc.text("INVOICE", 14, 20);
-      doc.setFontSize(10); doc.setTextColor(0); doc.setFont("helvetica", "normal");
-      doc.text(["BizGrow Holdings Ltd", "+44 7898205035", "Cranbrook House, 61", "Ilford, Essex, IG1 4PG", "https://bizgrow-holdings.com/"], 14, 30);
+ const generatePDF = async (inv) => {
+  try {
+    const doc = new jsPDF();
 
-      doc.setFont(undefined, 'bold'); doc.text("BILLED TO:", 14, 60);
-      doc.setFontSize(11); doc.text(inv.clientCompanyName || "Valued Client", 14, 67);
-      doc.setFontSize(10); doc.setFont(undefined, 'normal');
-      doc.text(`${inv.clientName || ""}\n${inv.clientAddress || "Address Not Provided"}`, 14, 73);
+    /* ================= LOGO ================= */
+    const logo = "/bizgrow-logo.png";
+    doc.addImage(logo, "PNG", 150, 10, 40, 20);
 
-      doc.setFont(undefined, 'bold'); doc.text("Invoice Number:", 130, 60);
-      doc.text("Issue Date:", 130, 66);
-      doc.text("Due Date:", 130, 72);
-      doc.setFont(undefined, 'normal');
-      doc.text(inv.invoiceNumber || "N/A", 170, 60);
-      const formatDt = (d) => d ? new Date(d).toLocaleDateString('en-GB') : "N/A";
-      doc.text(formatDt(inv.issueDate || inv.createdAt), 170, 66);
-      doc.text(formatDt(inv.dueDate), 170, 72);
+    /* ================= HEADER ================= */
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(18, 6, 106);
+    doc.text("INVOICE", 14, 22);
 
-      let tableRows = [];
-      let subTotal = 0;
-      if (inv.items && inv.items.length > 0) {
-        tableRows = inv.items.map(i => [i.serviceName, `£${Number(i.price).toFixed(2)}`, i.quantity, "20%", `£${(Number(i.price) * Number(i.quantity)).toFixed(2)}` ]);
-        subTotal = inv.items.reduce((acc, i) => acc + (Number(i.price) * Number(i.quantity)), 0);
-      } else {
-        const totalAmt = parseFloat(inv.amount || inv.totalAmount || 0);
-        subTotal = totalAmt / 1.2;
-        tableRows = [[ "Professional Services", `£${subTotal.toFixed(2)}`, "1", "20%", `£${subTotal.toFixed(2)}` ]];
-      }
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60);
+    doc.text(
+      [
+        "BizGrow Holdings Ltd",
+        "+44 7898 205035",
+        "Cranbrook House, 61 Cranbrook Road",
+        "Ilford, Essex, IG1 4PG, GB",
+        "https://bizgrow-holdings.com/"
+      ],
+      14,
+      32
+    );
 
-      autoTable(doc, {
-        startY: 95,
-        head: [["Description", "Price", "Qty", "VAT", "Total"]],
-        body: tableRows,
-        headStyles: { fillColor: [18, 6, 106] },
-      });
+    /* ================= PAY BOX ================= */
+    const formatDt = (d) => d ? new Date(d).toLocaleDateString("en-GB") : "N/A";
 
-      const finalY = doc.lastAutoTable.finalY + 10;
-      doc.setFont(undefined, 'bold');
-      doc.text(`Subtotal: £${subTotal.toFixed(2)}`, 195, finalY, { align: 'right' });
-      doc.text(`VAT (20%): £${(subTotal * 0.2).toFixed(2)}`, 195, finalY + 7, { align: 'right' });
-      doc.setFontSize(12); doc.setTextColor(18, 6, 106);
-      doc.text(`Total Due: £${(subTotal * 1.2).toFixed(2)}`, 195, finalY + 16, { align: 'right' });
+    let subTotal = 0;
+    if (inv.items?.length) {
+      subTotal = inv.items.reduce(
+        (a, i) => a + Number(i.price) * Number(i.quantity),
+        0
+      );
+    } else {
+      subTotal = Number(inv.amount || inv.totalAmount || 0) / 1.2;
+    }
 
-      // ✨ Page 2: PROFESSIONAL TERMS
-      doc.addPage();
-      doc.setFontSize(16); doc.setTextColor(18, 6, 106); doc.setFont("helvetica", "bold");
-      doc.text("Terms & Notes:", 14, 20);
-      doc.setFontSize(12); doc.text("Terms and Conditions", 14, 28);
-      doc.setDrawColor(200); doc.line(14, 30, 195, 30);
+    const vat = subTotal * 0.2;
+    const total = subTotal + vat;
 
-      const terms = [
-        { h: "Introduction", b: "These Terms govern the agreement between Bizgrow Holding Ltd (No. 14026241) and the Client for consultancy services." },
-        { h: "Acceptance", b: "Initiating services implies acceptance of these Terms and our formal quotation." },
-        { h: "Fees & Payment", b: "Payment is due within 7 business days. Late payments accrue 10% interest. Refunds available within 14 days if work has not started." },
-        { h: "Liability", b: "Our liability is limited to total Fees paid. We are not liable for indirect losses or data loss." },
-        { h: "Governing Law", b: "Governed by the laws of England and Wales." }
-      ];
+    doc.setDrawColor(18, 6, 106);
+    doc.setFillColor(245, 247, 255);
+    doc.roundedRect(135, 40, 60, 20, 3, 3, "F");
 
-      let tY = 40;
-      doc.setTextColor(50);
-      terms.forEach(t => {
-        doc.setFontSize(10); doc.setFont("helvetica", "bold");
-        doc.text(t.h, 14, tY);
-        doc.setFontSize(9); doc.setFont("helvetica", "normal");
-        const lines = doc.splitTextToSize(t.b, 180);
-        doc.text(lines, 14, tY + 5, { lineHeightFactor: 1.4 });
-        tY += (lines.length * 5) + 10;
-      });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(18, 6, 106);
+    doc.text(`Pay £${total.toFixed(2)}`, 165, 53, { align: "center" });
 
-      doc.save(`${inv.invoiceNumber}.pdf`);
-    } catch (e) { console.error(e); alert("PDF Error"); }
-  };
+    /* ================= BILLED TO ================= */
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0);
+    doc.text("BILLED TO", 14, 70);
+
+    doc.setFont("helvetica", "bold");
+    doc.text(inv.clientCompanyName || "Valued Client", 14, 77);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(
+      doc.splitTextToSize(
+        `${inv.clientName || ""}\n${inv.clientAddress || ""}`,
+        80
+      ),
+      14,
+      83
+    );
+
+    /* ================= META ================= */
+    doc.setFont("helvetica", "bold");
+    doc.text("Invoice Number:", 130, 70);
+    doc.text("Issue Date:", 130, 77);
+    doc.text("Due Date:", 130, 84);
+
+    doc.setFont("helvetica", "normal");
+    doc.text(inv.invoiceNumber || "N/A", 170, 70);
+    doc.text(formatDt(inv.issueDate || inv.createdAt), 170, 77);
+    doc.text(formatDt(inv.dueDate), 170, 84);
+
+    /* ================= TABLE ================= */
+    const tableRows = inv.items?.length
+      ? inv.items.map(i => [
+          i.serviceName,
+          `£${Number(i.price).toFixed(2)}`,
+          i.quantity,
+          "20%",
+          `£${(Number(i.price) * Number(i.quantity)).toFixed(2)}`
+        ])
+      : [[
+          "Professional Services",
+          `£${subTotal.toFixed(2)}`,
+          "1",
+          "20%",
+          `£${subTotal.toFixed(2)}`
+        ]];
+
+    autoTable(doc, {
+      startY: 100,
+      head: [["Item Name", "Price", "Qty", "VAT", "Subtotal"]],
+      body: tableRows,
+      styles: {
+        fontSize: 10,
+        cellPadding: 4
+      },
+      headStyles: {
+        fillColor: [18, 6, 106],
+        textColor: 255
+      },
+      alternateRowStyles: { fillColor: [245, 247, 255] }
+    });
+
+    /* ================= TOTALS ================= */
+    const y = doc.lastAutoTable.finalY + 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.text(`Subtotal: £${subTotal.toFixed(2)}`, 195, y, { align: "right" });
+    doc.text(`VAT (20%): £${vat.toFixed(2)}`, 195, y + 7, { align: "right" });
+
+    doc.setFontSize(12);
+    doc.setTextColor(18, 6, 106);
+    doc.text(`Amount Due (GBP): £${total.toFixed(2)}`, 195, y + 16, {
+      align: "right"
+    });
+
+    /* ================= PAGE 2 TERMS ================= */
+    doc.addPage();
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(18, 6, 106);
+    doc.text("Terms & Conditions", 14, 20);
+
+    doc.setDrawColor(200);
+    doc.line(14, 23, 195, 23);
+
+    const terms = [
+      ["Introduction", "These Terms govern the agreement between Bizgrow Holding Ltd and the Client."],
+      ["Acceptance", "Proceeding with services constitutes acceptance of these Terms."],
+      ["Fees & Payment", "Invoices are payable within 7 business days. Late payments accrue interest at 10%."],
+      ["Liability", "Our liability is limited to the total fees paid under this contract."],
+      ["Governing Law", "These Terms are governed by the laws of England and Wales."]
+    ];
+
+    let ty = 35;
+    doc.setTextColor(50);
+
+    terms.forEach(([title, body]) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text(`• ${title}`, 14, ty);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(doc.splitTextToSize(body, 175), 18, ty + 5);
+
+      ty += 18;
+    });
+
+    /* ================= SAVE ================= */
+    doc.save(`${inv.invoiceNumber}.pdf`);
+
+  } catch (e) {
+    console.error(e);
+    alert("PDF generation failed");
+  }
+};
+
 
   return (
     <div className="p-8 bg-zinc-50 min-h-screen text-zinc-900 font-sans">

@@ -16,7 +16,7 @@ export async function POST(req) {
       const lastNum = parseInt(lastInvoice.invoiceNumber.replace("INV-", ""));
       if (!isNaN(lastNum)) nextNum = lastNum + 1;
     }
-    const invoiceNumber = `INV-${nextNum}`;
+    const invoiceNumber = `INV-BG-${nextNum}`;
 
     // Calculations
     const subtotal = body.items.reduce((acc, item) => {
@@ -52,13 +52,13 @@ export async function GET() {
     
     let nextNum = 100;
     if (lastInvoice?.invoiceNumber) {
-      const lastNum = parseInt(lastInvoice.invoiceNumber.replace("INV-", ""));
+      const lastNum = parseInt(lastInvoice.invoiceNumber.replace("INV-BG", ""));
       if (!isNaN(lastNum)) nextNum = lastNum + 1;
     }
 
     return NextResponse.json({ 
       invoices: invoices || [], 
-      nextInvoiceNumber: `INV-${nextNum}` 
+      nextInvoiceNumber: `INV-BG-${nextNum}` 
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
