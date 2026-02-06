@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Trash2, Building2, Phone, Mail, Receipt } from "lucide-react"; // Receipt icon add kiya
-import { useRouter } from "next/navigation"; // Navigation ke liye
+import { Trash2, Building2, Phone, Mail, Receipt } from "lucide-react"; 
+import { useRouter } from "next/navigation"; 
 
 export default function Dashboard() {
   const router = useRouter();
@@ -37,7 +37,9 @@ export default function Dashboard() {
     e.preventDefault();
     const res = await fetch("/api/leads", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json" 
+      },
       body: JSON.stringify(formData),
     });
 
@@ -57,7 +59,9 @@ export default function Dashboard() {
 
   const deleteLead = async (id) => {
     if (confirm("Delete this lead?")) {
-      await fetch(`/api/leads/${id}`, { method: "DELETE" });
+      await fetch(`/api/leads/${id}`, { 
+        method: "DELETE" 
+      });
       fetchLeads();
     }
   };
@@ -65,7 +69,9 @@ export default function Dashboard() {
   const updateStatus = async (id, newStatus) => {
     const res = await fetch(`/api/leads/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json" 
+      },
       body: JSON.stringify({ status: newStatus }),
     });
     if (res.ok) fetchLeads();
@@ -96,7 +102,9 @@ export default function Dashboard() {
           <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-2">
             Total Prospects
           </p>
-          <p className="text-4xl font-black">{leads.length}</p>
+          <p className="text-4xl font-black">
+            {leads.length}
+          </p>
         </div>
         <div className="bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-sm">
           <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-2">
@@ -169,6 +177,7 @@ export default function Dashboard() {
               <option value="ISO 45001">ISO 45001</option>
               <option value="ISO 27001">ISO 27001</option>
             </select>
+
             <select
               className="w-full p-4 bg-zinc-50 border rounded-2xl font-bold text-sm text-[#12066a]"
               value={formData.status}
@@ -238,10 +247,18 @@ export default function Dashboard() {
                         <option value="Cancelled">Cancelled</option>
                       </select>
 
-                      {/* --- GENERATE INVOICE BUTTON (YAHAN HAI CHANGE) --- */}
+                      {/* --- GENERATE INVOICE BUTTON (FIXED LOGIC) --- */}
                       {lead.status === "Closed" && (
                         <button
-                         onClick={() => router.push(`/invoices?name=${encodeURIComponent(lead.clientName)}&amount=${lead.value}&company=${encodeURIComponent(lead.companyName || "")}`)}
+                          onClick={() => {
+                            localStorage.setItem("pendingInvoice", JSON.stringify({
+                              name: lead.clientName,
+                              amount: lead.value,
+                              company: lead.companyName || "",
+                              service: lead.service
+                            }));
+                            router.push("/invoices");
+                          }}
                           className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl transition-all shadow-md active:scale-95"
                         >
                           <Receipt size={12} />
