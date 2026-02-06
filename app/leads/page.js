@@ -130,12 +130,10 @@ export default function LeadsPage() {
                     </td>
                     <td className="p-6">
                       <div className="flex gap-2">
-                        <button className="p-3 bg-zinc-50 text-zinc-400 hover:text-[#12066a] hover:bg-zinc-100 rounded-xl transition-all">
-                          <Eye size={18} />
-                        </button>
+                      
                         <button 
                           onClick={() => deleteLead(lead._id)}
-                          className="p-3 bg-zinc-50 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                          className="p-3 bg-zinc-50 text-zinc-400 cursor-pointer hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                         >
                           <Trash2 size={18} />
                         </button>

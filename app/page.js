@@ -241,7 +241,7 @@ export default function Dashboard() {
                       {/* --- GENERATE INVOICE BUTTON (YAHAN HAI CHANGE) --- */}
                       {lead.status === "Closed" && (
                         <button
-                          onClick={() => router.push(`/invoices?name=${encodeURIComponent(lead.clientName)}&amount=${lead.value}`)}
+                         onClick={() => router.push(`/invoices?name=${encodeURIComponent(lead.clientName)}&amount=${lead.value}&company=${encodeURIComponent(lead.companyName || "")}`)}
                           className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl transition-all shadow-md active:scale-95"
                         >
                           <Receipt size={12} />
@@ -251,16 +251,16 @@ export default function Dashboard() {
                     </div>
                     <div className="flex flex-col gap-1 mt-1">
                       <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-zinc-400 font-bold uppercase flex items-center gap-1">
+                        <span className="text-[10px] text-zinc-700 font-bold uppercase flex items-center gap-1">
                           <Building2 size={12} /> {lead.companyName || "N/A"}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+                        <span className="text-[10px] text-zinc-700 flex items-center gap-1">
                           <Mail size={12} className="text-[#12066a]" />{" "}
                           {lead.email || "No Email"}
                         </span>
-                        <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+                        <span className="text-[10px] text-zinc-700 flex items-center gap-1">
                           <Phone size={12} className="text-[#12066a]" />{" "}
                           {lead.phone || "No Phone"}
                         </span>
@@ -273,7 +273,7 @@ export default function Dashboard() {
                     <div className="text-xl font-black text-[#12066a]">
                       £{Number(lead.value).toLocaleString()}
                     </div>
-                    <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-widest">
+                    <span className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">
                       {lead.service}
                     </span>
                   </div>

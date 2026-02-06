@@ -1,76 +1,90 @@
+import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Invoice from "@/models/Invoice";
-import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// 1. GET: Saari invoices mangwane ke liye
-export async function GET() {
-  try {
-    await connectDB();
-    const invoices = await Invoice.find({}).sort({ createdAt: -1 });
-    return NextResponse.json(invoices);
-  } catch (error) {
-    console.error("❌ INVOICE GET ERROR:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-// 2. POST: Nayi invoice create karne ke liye
 export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
 
-    if (!body.clientName || !body.amount) {
-      return NextResponse.json({ error: "Client Name and Amount are required" }, { status: 400 });
+    // Latest Invoice Number logic
+    const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
+    let nextNum = 100;
+    if (lastInvoice?.invoiceNumber) {
+      const lastNum = parseInt(lastInvoice.invoiceNumber.replace("INV-", ""));
+      if (!isNaN(lastNum)) nextNum = lastNum + 1;
     }
+    const invoiceNumber = `INV-${nextNum}`;
 
-    const newInvoice = await Invoice.create(body);
-    console.log("✅ Invoice Generated:", newInvoice.invoiceNumber);
+    // Calculations
+    const subtotal = body.items.reduce((acc, item) => {
+      return acc + (parseFloat(item.price || 0) * parseInt(item.quantity || 1));
+    }, 0);
+    const total = subtotal + (subtotal * 0.20);
+
+    // ✨ Important: Aapke model ki requirements poori karna
+    const invoiceData = {
+      ...body,
+      invoiceNumber,
+      totalAmount: total, // Frontend ke liye
+      amount: total.toString(), // Aapke database schema ke liye
+    };
+
+    const newInvoice = await Invoice.create(invoiceData);
+    
+    // Success Response
     return NextResponse.json(newInvoice, { status: 201 });
+
   } catch (error) {
-    console.error("❌ INVOICE POST ERROR:", error.message);
-    return NextResponse.json({ error: "Failed to create invoice" }, { status: 500 });
+    console.error("❌ POST ERROR:", error);
+    // Yeh response alert mein error message dikhayega
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// 3. PATCH: Status update karne ke liye (Unpaid to Paid)
-export async function PATCH(req) {
+export async function GET() {
   try {
     await connectDB();
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id"); // URL se ID pakregay
-    const body = await req.json();
+    const invoices = await Invoice.find({}).sort({ createdAt: -1 });
+    const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
+    
+    let nextNum = 100;
+    if (lastInvoice?.invoiceNumber) {
+      const lastNum = parseInt(lastInvoice.invoiceNumber.replace("INV-", ""));
+      if (!isNaN(lastNum)) nextNum = lastNum + 1;
+    }
 
-    if (!id) return NextResponse.json({ error: "ID is required" }, { status: 400 });
-
-    const updatedInvoice = await Invoice.findByIdAndUpdate(
-      id,
-      { status: body.status },
-      { new: true }
-    );
-
-    console.log("✅ Status Updated to:", body.status);
-    return NextResponse.json(updatedInvoice);
+    return NextResponse.json({ 
+      invoices: invoices || [], 
+      nextInvoiceNumber: `INV-${nextNum}` 
+    });
   } catch (error) {
-    console.error("❌ UPDATE ERROR:", error.message);
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
-// 4. DELETE: Invoice khatam karne ke liye
 export async function DELETE(req) {
   try {
     await connectDB();
+    
+    // URL se ID nikalne ka sahi tareeka
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
-    if (!id) return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: "Invoice ID is required" }, { status: 400 });
+    }
 
-    await Invoice.findByIdAndDelete(id);
-    return NextResponse.json({ message: "Invoice Deleted Successfully" });
+    const deletedInvoice = await Invoice.findByIdAndDelete(id);
+
+    if (!deletedInvoice) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: "Invoice deleted successfully" }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    console.error("Delete Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
