@@ -45,7 +45,7 @@ export default function SettingsPage() {
     <div className="p-8 bg-zinc-50 min-h-screen text-zinc-900 font-sans">
       <div className="max-w-4xl mx-auto">
         <div className="mb-10">
-          <h1 className="text-4xl font-black text-[#12066a] tracking-tight">Settings</h1>
+          <h1 className="text-4xl font-black text-[#12066a] mt-14 md:mt-0 tracking-tight">Settings</h1>
           <p className="text-zinc-500 font-medium">Manage your business profile and bank details</p>
         </div>
 

@@ -1,7 +1,6 @@
 import Sidebar from "@/components/Sidebar";
 import "./globals.css";
 
-
 export const metadata = {
   title: "BizGrow | Sales Intelligence Dashboard",
   description: "Next-gen sales tracking and analytics console for BizGrow",
@@ -15,18 +14,14 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="bg-[#0b0b0b] text-zinc-100">
-        
-        {/* Sidebar */}
-       
+        <div className="flex">
           <Sidebar />
-        
-
-        {/* Main Content */}
-        <main className="ml-[280px] min-h-screen">
-          {children}
-        </main>
-
+          <main className="flex-1 min-h-screen lg:ml-72 transition-all duration-300">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );
 }
+

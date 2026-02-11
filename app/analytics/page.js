@@ -23,10 +23,9 @@ export default function AnalyticsPage() {
         const leads = await res.json();
         setAllLeads(leads);
 
-        // Saare years nikalna aur sort karna (Future proofing)
         const years = [...new Set(leads.map(l => new Date(l.createdAt).getFullYear().toString()))];
         if (!years.includes("2026")) years.push("2026");
-        setAvailableYears(years.sort((a, b) => b - a)); // Latest year upar
+        setAvailableYears(years.sort((a, b) => b - a));
 
         processData(leads, selectedYear);
         setLoading(false);
@@ -38,16 +37,13 @@ export default function AnalyticsPage() {
     fetchLeads();
   }, []);
 
-  // Jab year change ho toh auto-update
   useEffect(() => {
     processData(allLeads, selectedYear);
   }, [selectedYear, allLeads]);
 
   const processData = (leads, year) => {
-    // 🎯 Step 1: Filter by Year (Isi se reset aur change handle hoga)
     const yearlyLeads = leads.filter(l => new Date(l.createdAt).getFullYear().toString() === year);
 
-    // 🎯 Step 2: Monthly Tracking Logic
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const mData = months.map(m => ({ month: m, revenue: 0 }));
 
@@ -57,7 +53,6 @@ export default function AnalyticsPage() {
     });
     setMonthlyData(mData);
 
-    // 🎯 Step 3: Service Breakdown (Pie Chart)
     const serviceCounts = yearlyLeads.reduce((acc, lead) => {
       acc[lead.service] = (acc[lead.service] || 0) + (Number(lead.value) || 0);
       return acc;
@@ -83,21 +78,19 @@ export default function AnalyticsPage() {
   );
 
   return (
-    <div className="p-8 lg:p-12 min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="p-6 md:p-8 lg:p-12 min-h-screen bg-zinc-50 text-zinc-900">
       <div className="max-w-7xl mx-auto">
-        
-        {/* Header Section */}
+
+        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
-            <h1 className="text-4xl font-black text-[#12066a] flex items-center gap-3">
+            <h1 className="text-4xl font-black text-[#12066a] mt-14 md:mt-0 flex items-center gap-3">
               <BarChart3 size={36} /> Sales Intelligence
             </h1>
             <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mt-1">
               Data visualization for {selectedYear} fiscal year
             </p>
           </div>
-          
-          {/* Year Switcher (Automatic Reset Control) */}
           <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200 shadow-sm">
             <Calendar size={18} className="text-[#12066a]" />
             <select 
@@ -112,31 +105,31 @@ export default function AnalyticsPage() {
 
         {/* Top Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="bg-[#12066a] text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group">
+          <div className="bg-[#12066a] text-white p-6 md:p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group">
             <div className="relative z-10">
               <PoundSterling className="mb-2 opacity-50" size={24} />
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Total {selectedYear} Revenue</p>
-              <h2 className="text-4xl font-black italic">£{totalYearlyRevenue.toLocaleString()}</h2>
+              <h2 className="text-3xl md:text-4xl font-black italic">£{totalYearlyRevenue.toLocaleString()}</h2>
             </div>
             <TrendingUp size={120} className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform" />
           </div>
-          
-          <div className="bg-white p-8 rounded-[2.5rem] border border-zinc-200 shadow-sm flex items-center gap-5">
-             <div className="p-4 bg-zinc-50 rounded-2xl text-[#12066a]"><Layers size={24}/></div>
-             <div>
-               <p className="text-zinc-400 text-[9px] font-bold uppercase tracking-widest">Active Services</p>
-               <p className="text-2xl font-black text-[#12066a]">{filteredServiceData.length}</p>
-             </div>
+
+          <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-zinc-200 shadow-sm flex items-center gap-5">
+            <div className="p-4 bg-zinc-50 rounded-2xl text-[#12066a]"><Layers size={24}/></div>
+            <div>
+              <p className="text-zinc-400 text-[9px] font-bold uppercase tracking-widest">Active Services</p>
+              <p className="text-2xl font-black text-[#12066a]">{filteredServiceData.length}</p>
+            </div>
           </div>
         </div>
 
-        {/* MONTHLY BAR CHART SECTION */}
-        <div className="bg-white p-10 rounded-[2.5rem] border border-zinc-200 shadow-sm mb-10">
-          <div className="flex justify-between items-center mb-8">
+        {/* Monthly Bar Chart */}
+        <div className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-zinc-200 shadow-sm mb-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4">
             <h2 className="text-xl font-black text-[#12066a]">Monthly Performance Trend</h2>
             <span className="text-[10px] font-bold bg-zinc-100 px-3 py-1 rounded-full text-zinc-500 uppercase">Financial Year: {selectedYear}</span>
           </div>
-          <div className="h-[350px] w-full">
+          <div className="h-[300px] md:h-[350px] lg:h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -147,19 +140,19 @@ export default function AnalyticsPage() {
                   contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 10px 30px rgba(18, 6, 106, 0.1)'}}
                   formatter={(v) => [`£${v.toLocaleString()}`, "Revenue"]}
                 />
-                <Bar dataKey="revenue" fill="#12066a" radius={[8, 8, 0, 0]} barSize={45} />
+                <Bar dataKey="revenue" fill="#12066a" radius={[8, 8, 0, 0]} barSize={35} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* PIE CHART & SERVICE LIST */}
-        <div className="grid grid-cols-12 gap-8">
-          <div className="col-span-12 lg:col-span-7 bg-white p-10 rounded-[2.5rem] border border-zinc-200 shadow-sm h-[500px]">
+        {/* Pie Chart & Service List */}
+        <div className="grid grid-cols-12 gap-6 md:gap-8">
+          <div className="col-span-12 lg:col-span-7 bg-white p-6 md:p-10 rounded-[2.5rem] border border-zinc-200 shadow-sm h-[350px] md:h-[400px] lg:h-[500px]">
             <h2 className="text-lg font-black mb-4">Service Revenue Share</h2>
             <ResponsiveContainer width="100%" height="90%">
               <PieChart>
-                <Pie data={filteredServiceData} innerRadius={100} outerRadius={140} paddingAngle={8} dataKey="value">
+                <Pie data={filteredServiceData} innerRadius={80} outerRadius={120} paddingAngle={8} dataKey="value">
                   {filteredServiceData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="none" />)}
                 </Pie>
                 <Tooltip formatter={(v) => `£${v.toLocaleString()}`} />
@@ -168,9 +161,9 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </div>
 
-          <div className="col-span-12 lg:col-span-5 bg-white p-10 rounded-[2.5rem] border border-zinc-200 shadow-sm">
+          <div className="col-span-12 lg:col-span-5 bg-white p-6 md:p-10 rounded-[2.5rem] border border-zinc-200 shadow-sm mb-8 lg:mb-0">
             <h2 className="text-lg font-black mb-8 text-[#12066a]">Department Analysis</h2>
-            <div className="space-y-8">
+            <div className="space-y-6 md:space-y-8">
               {filteredServiceData.length > 0 ? filteredServiceData.map((item, i) => (
                 <div key={i} className="group">
                   <div className="flex justify-between items-end mb-2">
@@ -190,6 +183,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

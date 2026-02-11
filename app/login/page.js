@@ -23,7 +23,7 @@ export default function LoginPage() {
     });
 
     if (result.error) {
-      setError("Ghalat Email ya Password!");
+      setError("Wrong Email or Password!");
       setLoading(false);
     } else {
       router.push("/"); 
