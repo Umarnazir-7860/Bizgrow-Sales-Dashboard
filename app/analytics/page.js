@@ -162,7 +162,7 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="col-span-12 lg:col-span-5 bg-white p-6 md:p-10 rounded-[2.5rem] border border-zinc-200 shadow-sm mb-8 lg:mb-0">
-            <h2 className="text-lg font-black mb-8 text-[#12066a]">Department Analysis</h2>
+            <h2 className="text-lg font-black mb-8 text-[#12066a]">Services Analysis</h2>
             <div className="space-y-6 md:space-y-8">
               {filteredServiceData.length > 0 ? filteredServiceData.map((item, i) => (
                 <div key={i} className="group">

@@ -7,7 +7,7 @@ export async function GET() {
   try {
     await connectDB();
     // Naya password jo aapne rakhna hai
-    const hashedPassword = await bcrypt.hash("bizgrow123", 10); 
+    const hashedPassword = await bcrypt.hash("bizgrow123@#$", 10); 
 
     const newUser = await User.create({
       name: "Admin",
