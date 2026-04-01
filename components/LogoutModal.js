@@ -1,8 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react"; // 🔹 NextAuth integration
+import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react"; 
 import {
   LayoutDashboard,
   Users,
@@ -23,7 +23,7 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
+      {/* Backdrop with Blur */}
       <div 
         className="absolute inset-0 bg-[#0a043c]/60 backdrop-blur-md animate-in fade-in duration-300"
         onClick={onClose}
@@ -32,6 +32,7 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }) => {
       {/* Modal Card */}
       <div className="relative bg-white rounded-[3rem] p-8 md:p-10 w-full max-w-sm shadow-[0_30px_70px_rgba(0,0,0,0.4)] border border-indigo-50 animate-in zoom-in-95 duration-300">
         <div className="flex flex-col items-center text-center">
+          
           <div className="w-20 h-20 bg-rose-50 rounded-[2.5rem] flex items-center justify-center mb-6 relative">
             <div className="absolute inset-0 bg-rose-200 rounded-[2.5rem] animate-ping opacity-20"></div>
             <LogOut size={36} className="text-rose-500 relative z-10" />
@@ -76,22 +77,33 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter(); // 🔹 Navigation ke liye
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // 🔹 LOGOUT FUNCTION
+  // 🔹 LOGOUT LOGIC (REDIRECT TO LOGIN)
   const handleLogoutConfirm = async () => {
     try {
-      // 1. Agar NextAuth use kar rahe ho:
-      await signOut({ callbackUrl: "/login" });
-      
-      // 2. Agar Custom JWT hai (NextAuth nahi hai), to ye use karo:
-      /*
-      localStorage.removeItem("token");
-      window.location.href = "/login";
-      */
-      
+      // Step 1: Pehle modal close karein
       setShowLogoutModal(false);
+
+      // Step 2: Session clear karein (Donon methods handle kiye hain)
+      
+      // Method A: Agar NextAuth use kar rahe ho (Best for Redirect)
+      await signOut({ 
+        redirect: true, 
+        callbackUrl: "/login" 
+      });
+
+      // Method B: Agar Custom JWT hai (NextAuth nahi hai), to niche wala uncomment karein:
+      /*
+      localStorage.clear();
+      sessionStorage.clear();
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      router.push("/login");
+      router.refresh(); 
+      */
+
     } catch (error) {
       console.error("Logout Error:", error);
     }
@@ -115,7 +127,7 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Main Sidebar */}
+      {/* Main Sidebar Container */}
       <aside className={cn(
         "fixed top-0 left-0 h-screen bg-[#0a043c] text-white border-r border-white/5 z-60 shadow-[20px_0_60px_rgba(0,0,0,0.2)] transition-all duration-500 ease-in-out",
         "w-[290px] lg:translate-x-0",
@@ -124,7 +136,7 @@ export default function Sidebar() {
         
         <div className="h-full flex flex-col pt-12 pb-8 px-6"> 
 
-          {/* Branding */}
+          {/* Branding Area */}
           <div className="mb-14 px-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-tr from-[#997819] to-amber-200 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(153,120,25,0.4)]">
               <ShieldCheck size={24} className="text-[#12066a]" />
@@ -139,7 +151,7 @@ export default function Sidebar() {
             </div>
           </div>
 
-          {/* Nav Links */}
+          {/* Navigation Links */}
           <nav className="flex flex-col gap-2 flex-1 overflow-y-auto no-scrollbar">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -173,8 +185,10 @@ export default function Sidebar() {
             })}
           </nav>
 
-          {/* Footer Area */}
+          {/* Sidebar Footer */}
           <div className="mt-auto space-y-4">
+            
+            {/* User Profile Info */}
             <div className="bg-white/5 p-4 rounded-[2rem] border border-white/5 flex items-center gap-4 group hover:bg-white/10 transition-colors">
               <div className="relative">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-[#12066a] flex items-center justify-center font-black text-lg border border-white/10 shadow-lg text-white">
@@ -188,15 +202,17 @@ export default function Sidebar() {
               </div>
             </div>
 
-            {/* 🔴 Trigger Modal */}
+            {/* Premium Logout Button */}
             <button 
               onClick={() => setShowLogoutModal(true)}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-[1.8rem] bg-rose-500/10 text-rose-500 border border-rose-500/20 font-black text-[11px] uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all duration-300 active:scale-95 group"
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-[1.8rem] bg-rose-500/10 text-rose-500 border border-rose-500/20 font-black text-[11px] uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all duration-300 active:scale-95 group shadow-lg shadow-rose-500/5"
             >
               <LogOut size={16} className="transition-transform group-hover:-translate-x-1" />
               Sign Out Session
             </button>
+            
           </div>
+
         </div>
       </aside>
 
