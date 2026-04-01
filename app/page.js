@@ -1,39 +1,23 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Trash2, Building2, Phone, Mail, Receipt} from "lucide-react"; 
-import { useRouter } from "next/navigation"; 
+import { Trash2, Building2, Phone, Mail, Wallet, Users, PlusCircle, LayoutDashboard, Briefcase, Receipt } from "lucide-react";
+import { Toaster, toast } from "sonner";
 
 export default function Dashboard() {
-  const router = useRouter();
   const [leads, setLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    clientName: "",
-    companyName: "",
-    email: "",
-    phone: "",
-    service: "SIA ACS",
-    value: "",
-    status: "Cold Lead",
+    clientName: "", companyName: "", email: "", phone: "", service: "SIA ACS", value: "", status: "Cold Lead",
   });
 
   const fetchLeads = async () => {
     try {
-      const res = await fetch("/api/leads");
-      if (!res.ok) throw new Error("API issues");
+      const res = await fetch("/api/leads", { cache: 'no-store' });
       const data = await res.json();
       setLeads(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Fetch leads failed:", error);
-      setLeads([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { setLeads([]); }
   };
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
+  useEffect(() => { fetchLeads(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,35 +26,40 @@ export default function Dashboard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });
-
     if (res.ok) {
-      setFormData({
-        clientName: "",
-        companyName: "",
-        email: "",
-        phone: "",
-        service: "SIA ACS",
-        value: "",
-        status: "Cold Lead",
-      });
-      fetchLeads();
-    }
-  };
-
-  const deleteLead = async (id) => {
-    if (confirm("Delete this lead?")) {
-      await fetch(`/api/leads/${id}`, { method: "DELETE" });
+      toast.success("Lead added successfully!");
+      setFormData({ clientName: "", companyName: "", email: "", phone: "", service: "SIA ACS", value: "", status: "Cold Lead" });
       fetchLeads();
     }
   };
 
   const updateStatus = async (id, newStatus) => {
+    const updatedLeads = leads.map(l => l._id === id ? { ...l, status: newStatus } : l);
+    setLeads(updatedLeads);
     const res = await fetch(`/api/leads/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
     });
-    if (res.ok) fetchLeads();
+    if (res.ok) toast.info(`Status changed to ${newStatus}`);
+  };
+
+  const handleDeleteRequest = (id, name) => {
+    toast.error(`Delete lead for ${name}?`, {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          const res = await fetch(`/api/leads/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            toast.success("Lead deleted successfully");
+            fetchLeads();
+          } else {
+            toast.error("Failed to delete lead");
+          }
+        },
+      },
+    });
   };
 
   const getStatusStyle = (status) => {
@@ -79,164 +68,143 @@ export default function Dashboard() {
       case "Hot Lead": return "bg-orange-100 text-orange-700 border-orange-200";
       case "Call Booked": return "bg-blue-100 text-blue-700 border-blue-200";
       case "Warm Lead": return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "Cancelled": return "bg-red-100 text-red-700 border-red-200";
       default: return "bg-zinc-100 text-zinc-600 border-zinc-200";
     }
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-zinc-50 min-h-screen text-zinc-900 font-sans">
-
-      {/* 🔹 Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 mt-14 md:mt-0 gap-6 mb-10">
-        <div className="bg-white p-6 sm:p-8 rounded-[2rem] border border-zinc-200 shadow-md hover:shadow-lg transition-shadow duration-300">
-          <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">Total Prospects</p>
-          {loading ? (
-            <div className="h-10 w-24 bg-zinc-100 animate-pulse rounded-lg" />
-          ) : (
-            <p className="text-3xl sm:text-4xl font-extrabold">{leads.length}</p>
-          )}
-        </div>
-        <div className="bg-white p-6 sm:p-8 rounded-[2rem] border border-zinc-200 shadow-md hover:shadow-lg transition-shadow duration-300">
-          <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">Pipeline Value</p>
-          {loading ? (
-            <div className="h-10 w-32 bg-zinc-100 animate-pulse rounded-lg" />
-          ) : (
-            <p className="text-3xl sm:text-4xl font-extrabold">
-              £{leads.reduce((a, b) => a + (Number(b.value) || 0), 0).toLocaleString()}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-12 gap-6 lg:gap-8">
+    <div className="p-6 lg:p-10 bg-[#f8fafc] min-h-screen text-zinc-900 font-sans">
+      <Toaster position="top-center" richColors closeButton />
+      
+      <div className="max-w-7xl mx-auto">
         
-        {/* FORM */}
-        <div className="col-span-12 lg:col-span-4 bg-white p-6 sm:p-8 rounded-[2rem] border border-zinc-200 shadow-md lg:sticky lg:top-8">
-          <h2 className="text-xl sm:text-2xl font-extrabold mb-6 text-[#12066a] flex items-center gap-2">
-            Add New Prospect
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input required placeholder="Client Name" className="w-full p-4 bg-zinc-50 border rounded-2xl outline-none focus:border-[#12066a] transition-colors" value={formData.clientName} onChange={(e) => setFormData({ ...formData, clientName: e.target.value })} />
-            <input placeholder="Company Name" className="w-full p-4 bg-zinc-50 border rounded-2xl outline-none focus:border-[#12066a] transition-colors" value={formData.companyName} onChange={(e) => setFormData({ ...formData, companyName: e.target.value })} />
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input placeholder="Email" className="w-full p-4 bg-zinc-50 border rounded-2xl outline-none focus:border-[#12066a] text-sm transition-colors" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-              <input placeholder="Phone" className="w-full p-4 bg-zinc-50 border rounded-2xl outline-none focus:border-[#12066a] text-sm transition-colors" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+        {/* 🔹 Header & Stats Row */}
+        <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
+          <div>
+            <h1 className="text-3xl font-black text-[#12066a] tracking-tight flex items-center gap-3">
+              <LayoutDashboard size={32} /> CRM Dashboard
+            </h1>
+            <p className="text-zinc-400 text-xs font-bold uppercase tracking-[0.3em] mt-1 ml-1">BizGrow Management System</p>
+          </div>
+          
+          <div className="flex gap-4">
+            <div className="bg-white px-6 py-4 rounded-2xl border border-zinc-100 shadow-sm flex items-center gap-4">
+              <div className="p-2 bg-blue-50 rounded-xl text-[#12066a]"><Users size={20} /></div>
+              <div>
+                <p className="text-[10px] font-black text-zinc-400 uppercase leading-none">Total</p>
+                <p className="text-xl font-black text-[#12066a]">{leads.length}</p>
+              </div>
             </div>
-
-            <select className="w-full p-4 bg-zinc-50 border rounded-2xl font-bold text-sm outline-none focus:border-[#12066a] transition-colors" value={formData.service} onChange={(e) => setFormData({ ...formData, service: e.target.value })}>
-              <option value="SIA ACS">SIA ACS</option>
-              <option value="ISO 9001">ISO 9001</option>
-              <option value="ISO 14001">ISO 14001</option>
-              <option value="ISO 45001">ISO 45001</option>
-              <option value="ISO 27001">ISO 27001</option>
-            </select>
-
-            <select className="w-full p-4 bg-zinc-50 border rounded-2xl font-bold text-sm text-[#12066a] outline-none focus:border-[#12066a] transition-colors" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-              <option value="Cold Lead">Cold Lead</option>
-              <option value="Warm Lead">Warm Lead</option>
-              <option value="Hot Lead">Hot Lead</option>
-              <option value="Call Booked">Call Booked</option>
-              <option value="Closed">Closed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-
-            <input required type="number" placeholder="Value £" className="w-full p-4 bg-zinc-50 border rounded-2xl font-bold outline-none focus:border-[#12066a] transition-colors" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} />
-
-            <button type="submit" className="w-full bg-[#12066a] text-white py-4 rounded-2xl font-extrabold uppercase tracking-widest text-xs shadow-lg hover:bg-blue-900 transition-all">
-              Record Prospect
-            </button>
-          </form>
+            <div className="bg-white px-6 py-4 rounded-2xl border border-zinc-100 shadow-sm flex items-center gap-4">
+              <div className="p-2 bg-amber-50 rounded-xl text-[#997819]"><Wallet size={20} /></div>
+              <div>
+                <p className="text-[10px] font-black text-zinc-400 uppercase leading-none">Pipeline</p>
+                <p className="text-xl font-black text-[#12066a]">£{leads.reduce((a, b) => a + (Number(b.value) || 0), 0).toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* LIST */}
-        <div className="col-span-12 lg:col-span-8">
-          <h2 className="text-xl sm:text-2xl font-extrabold mb-6">Sales Pipeline</h2>
-
-          <div className="space-y-4">
-            {loading ? (
-              [1, 2, 3].map((n) => (
-                <div key={n} className="bg-white p-4 sm:p-6 rounded-[2rem] border border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pulse"></div>
-              ))
-            ) : leads.length === 0 ? (
-              <div className="bg-white p-6 sm:p-12 rounded-[2rem] border border-dashed border-zinc-300 text-center">
-                <p className="text-zinc-400 font-bold">No prospects found. Add your first lead!</p>
-              </div>
-            ) : (
-              leads.map((lead) => (
-                <div key={lead._id} className="bg-white p-4 sm:p-6 rounded-[2rem] border border-zinc-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-[#12066a] transition-all group">
-                  
-                  <div className="flex items-start sm:items-center gap-4 sm:gap-5">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#12066a] text-white rounded-2xl flex items-center justify-center font-black text-lg sm:text-xl">
-                      {lead.clientName ? lead.clientName[0] : "P"}
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-black text-base sm:text-lg text-zinc-900">{lead.clientName}</h3>
-
-                        <select
-                          value={lead.status}
-                          onChange={(e) => updateStatus(lead._id, e.target.value)}
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border cursor-pointer outline-none ${getStatusStyle(lead.status)}`}
-                        >
-                          <option value="Cold Lead">Cold Lead</option>
-                          <option value="Warm Lead">Warm Lead</option>
-                          <option value="Hot Lead">Hot Lead</option>
-                          <option value="Call Booked">Call Booked</option>
-                          <option value="Closed">Closed</option>
-                          <option value="Cancelled">Cancelled</option>
-                        </select>
-
-                        {lead.status === "Closed" && (
-                          <button
-                            onClick={() => {
-                              localStorage.setItem(
-                                "pendingInvoice",
-                                JSON.stringify({ name: lead.clientName, amount: lead.value, company: lead.companyName || "", service: lead.service })
-                              );
-                              router.push("/invoices");
-                            }}
-                            className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl transition-all shadow-md active:scale-95"
-                          >
-                            <Receipt size={12} /> Generate Invoice
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="mt-1 text-[10px] text-zinc-700 font-bold uppercase flex items-center gap-1">
-                        <Building2 size={12} /> {lead.companyName || "N/A"}
-                      </div>
-
-                      <div className="flex flex-wrap gap-3 mt-1 text-[10px] text-zinc-700">
-                        <span className="flex items-center gap-1"><Mail size={12} className="text-[#12066a]" /> {lead.email || "No Email"}</span>
-                        <span className="flex items-center gap-1"><Phone size={12} className="text-[#12066a]" /> {lead.phone || "No Phone"}</span>
-                      </div>
-                    </div>
+        {/* 🔹 MAIN PIPELINE LIST */}
+        <div className="mb-12">
+          <div className="flex items-center gap-2 mb-4 ml-2">
+            <Briefcase size={18} className="text-[#997819]" />
+            <h2 className="text-sm font-black text-zinc-400 uppercase tracking-widest">Active Sales Pipeline</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-3">
+            {leads.length > 0 ? leads.map((lead) => (
+              <div key={lead._id} className="bg-white p-4 rounded-2xl border border-zinc-100 shadow-sm flex flex-col md:flex-row items-center justify-between hover:border-[#12066a]/20 hover:shadow-md transition-all group">
+                <div className="flex items-center gap-4 w-full md:w-1/3">
+                  <div className="w-12 h-12 bg-zinc-50 text-[#12066a] rounded-xl flex items-center justify-center font-black text-lg border border-zinc-100">
+                    {lead.clientName ? lead.clientName[0] : "P"}
                   </div>
-
-                  <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
-                    <div className="text-left sm:text-right">
-                      <div className="text-lg sm:text-xl font-black text-[#12066a]">
-                        £{Number(lead.value).toLocaleString()}
-                      </div>
-                      <span className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">
-                        {lead.service}
-                      </span>
-                    </div>
-
-                    <button onClick={() => deleteLead(lead._id)} className="text-red-500 transition-colors">
-                      <Trash2 size={18} />
-                    </button>
+                  <div>
+                    <h3 className="font-black text-[#12066a] text-md leading-tight">{lead.clientName}</h3>
+                    <p className="text-[10px] text-zinc-600 font-bold uppercase flex items-center gap-1 mt-0.5"><Building2 size={10} className="text-[#12066a]" /> {lead.companyName || "Private"}</p>
                   </div>
-
                 </div>
-              ))
+
+                <div className="flex flex-wrap items-center gap-6 w-full md:w-2/3 justify-between md:justify-end mt-4 md:mt-0">
+                  <div className="hidden xl:flex flex-col gap-1 text-right mr-4">
+                    <span className="text-[10px] text-zinc-400 flex items-center justify-end gap-1.5 font-medium"><Mail size={10} /> {lead.email || "N/A"}</span>
+                    <span className="text-[10px] text-zinc-400 flex items-center justify-end gap-1.5 font-medium"><Phone size={10} /> {lead.phone || "N/A"}</span>
+                  </div>
+
+                  {/* Generate Invoice Button (Visible only if status is Closed) */}
+                  {lead.status === "Closed" && (
+                    <button
+                      onClick={() => {
+                        const invoiceData = {
+                          name: lead.clientName,
+                          company: lead.companyName,
+                          amount: lead.value,
+                          service: lead.service
+                        };
+                        localStorage.setItem("pendingInvoice", JSON.stringify(invoiceData));
+                        window.location.href = "/invoices";
+                      }}
+                      className="bg-[#10b981] hover:bg-[#059669] text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase flex items-center gap-1.5 shadow-sm transition-all active:scale-95 animate-in fade-in slide-in-from-right-2"
+                    >
+                      <Receipt size={12} /> Generate Invoice
+                    </button>
+                  )}
+
+                  <select
+                    value={lead.status}
+                    onChange={(e) => updateStatus(lead._id, e.target.value)}
+                    className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase border cursor-pointer outline-none transition-all ${getStatusStyle(lead.status)}`}
+                  >
+                    {["Cold Lead", "Warm Lead", "Hot Lead", "Call Booked", "Closed", "Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+
+                  <div className="text-right min-w-[100px]">
+                    <p className="font-black text-[#12066a] text-lg tracking-tighter italic leading-none">£{Number(lead.value).toLocaleString()}</p>
+                    <span className="text-[8px] font-black text-[#997819] uppercase tracking-widest">{lead.service}</span>
+                  </div>
+
+                  <button onClick={() => handleDeleteRequest(lead._id, lead.clientName)} className="p-2 text-red-400 hover:text-red-600 transition-colors">
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            )) : (
+              <div className="p-20 text-center bg-white rounded-3xl border-2 border-dashed border-zinc-100 text-zinc-300 font-bold uppercase tracking-widest">Pipeline Empty</div>
             )}
           </div>
         </div>
 
+        {/* 🔹 BOTTOM FORM */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-zinc-200 shadow-xl shadow-blue-900/5 mt-10">
+          <div className="flex items-center gap-3 mb-6">
+            <PlusCircle className="text-[#12066a]" size={22} />
+            <h2 className="text-xl font-black text-[#12066a] tracking-tight">Record New Prospect</h2>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <input required placeholder="Client Full Name" className="w-full px-5 py-3.5 bg-zinc-50 border border-transparent rounded-2xl outline-none focus:border-[#12066a] focus:bg-white text-sm font-semibold transition-all" value={formData.clientName} onChange={(e) => setFormData({ ...formData, clientName: e.target.value })} />
+            <input placeholder="Company Name" className="w-full px-5 py-3.5 bg-zinc-50 border border-transparent rounded-2xl outline-none focus:border-[#12066a] focus:bg-white text-sm font-semibold transition-all" value={formData.companyName} onChange={(e) => setFormData({ ...formData, companyName: e.target.value })} />
+            <input placeholder="Email Address" className="w-full px-5 py-3.5 bg-zinc-50 border border-transparent rounded-2xl outline-none focus:border-[#12066a] focus:bg-white text-sm font-semibold transition-all" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+            <input placeholder="Phone" className="w-full px-5 py-3.5 bg-zinc-50 border border-transparent rounded-2xl outline-none focus:border-[#12066a] focus:bg-white text-sm font-semibold transition-all" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+            
+            <select className="w-full px-5 py-3.5 bg-zinc-50 border border-transparent rounded-2xl font-bold text-sm outline-none focus:border-[#12066a] cursor-pointer" value={formData.service} onChange={(e) => setFormData({ ...formData, service: e.target.value })}>
+              {["SIA ACS", "ISO 9001", "ISO 14001", "ISO 45001", "ISO 27001"].map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+
+            <select className="w-full px-5 py-3.5 bg-zinc-50 border border-transparent rounded-2xl font-bold text-sm outline-none focus:border-[#12066a] cursor-pointer" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+              {["Cold Lead", "Warm Lead", "Hot Lead", "Call Booked", "Closed", "Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">£</span>
+              <input required type="number" placeholder="Value" className="w-full pl-8 pr-5 py-3.5 bg-zinc-50 border border-transparent rounded-2xl font-black text-[#12066a] outline-none focus:border-[#12066a]" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} />
+            </div>
+
+            <button type="submit" className="w-full bg-[#12066a] text-white py-3.5 rounded-2xl font-black uppercase tracking-[0.1em] text-xs shadow-lg shadow-blue-900/20 hover:bg-[#1a0b8a] transition-all active:scale-95">
+              Add to Pipeline
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -1,24 +1,52 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
+@theme {
+  /* ✨ Custom Colors defined in Tailwind Theme */
+  --color-background: #0b0b0b;
+  --color-foreground: #ffffff;
+
+  /* ✨ Animation define kar rahe hain v4 style mein */
+  --keyframes-shimmer: {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  };
+  --animate-shimmer: shimmer 2s infinite linear;
 }
 
-/* Universal padding: 0 ko hata diya hai, Tailwind v4 handle kar lega */
-body {
-  background: var(--background);
-  color: var(--foreground);
-  min-height: 100vh;
+/* Universal Base Styles */
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply min-h-screen antialiased font-sans;
+  }
 }
 
-@keyframes shimmer {
-  0% { background-position: -1000px 0; }
-  100% { background-position: 1000px 0; }
-}
+/* Utilities */
+@layer utilities {
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg, 
+      rgba(255, 255, 255, 0.03) 25%, 
+      rgba(255, 255, 255, 0.08) 50%, 
+      rgba(255, 255, 255, 0.03) 75%
+    );
+    background-size: 1000px 100%;
+    @apply animate-shimmer;
+  }
 
-.shimmer {
-  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
-  background-size: 1000px 100%;
-  animation: shimmer 1.5s infinite;
+  /* Custom Scrollbar for Dark Theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0b0b0b;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
 }
